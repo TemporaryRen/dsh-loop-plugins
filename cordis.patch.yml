@@ -1,0 +1,7 @@
+# dsh bundle patch: mounts this plugin into a profile's layer stack.
+# The profile's `dsh.profile.bundles` must list `dsh-loop-manager`; installing
+# the package through the profile's package manager reconciles that list from
+# this declaration.
+- insert:
+    - id: loop-manager
+      name: 'dsh-loop-manager'

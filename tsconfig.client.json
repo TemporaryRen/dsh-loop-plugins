@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "None",
+    "moduleResolution": "Classic",
+    "moduleDetection": "legacy",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": [],
+    "verbatimModuleSyntax": false,
+    "declaration": false,
+    "declarationMap": false,
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["lib/client.ts", "lib/client-types.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

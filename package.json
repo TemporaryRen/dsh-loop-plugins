@@ -1,0 +1,77 @@
+{
+  "name": "dsh-loop-manager",
+  "version": "0.3.0",
+  "description": "Loop Manager — build DAG pipelines of agent tasks and loop them through gate checks, from the DSH left sidebar.",
+  "type": "module",
+  "main": "dist/lib/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/lib/index.d.ts",
+      "default": "./dist/lib/index.js"
+    },
+    "./client": {
+      "default": "./dist/lib/client.js"
+    },
+    "./package.json": "./package.json",
+    "./icon.svg": "./icon.svg"
+  },
+  "icon": "./icon.svg",
+  "files": [
+    "dist/lib",
+    "lib",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-llm": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-llm": {
+      "optional": false
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [],
+      "platform": "web"
+    },
+    "manifestVersion": 1
+  },
+  "packageManager": "npm@11.17.0",
+  "scripts": {
+    "dev": "tsc -b tsconfig.json tsconfig.client.json tsconfig.tools.json --watch",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.client.json && tsc -p tsconfig.tools.json",
+    "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
+    "pretest": "npm run build",
+    "test": "node --enable-source-maps --test dist/test/*.test.mjs",
+    "test:watch": "npm run build && node --enable-source-maps --test --watch dist/test/*.test.mjs",
+    "test:coverage": "npm run build && node --enable-source-maps --test --experimental-test-coverage --test-coverage-include=\"dist/lib/**/*.js\" dist/test/*.test.mjs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "validate": "npm run check && npm run lint && npm test",
+    "prepack": "npm run build"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1"
+  },
+  "types": "dist/lib/index.d.ts"
+}

@@ -1,0 +1,96 @@
+# 依赖与包管理器缓存
+node_modules/
+.npm/
+
+# 构建产物、测试覆盖率与工具缓存（lib/ 中的 TypeScript 是源码）
+/dist/
+/build/
+coverage/
+.nyc_output/
+.cache/
+.eslintcache
+*.tsbuildinfo
+/*.tgz
+
+# 日志、进程文件与 Node.js 诊断数据
+logs/
+*.log
+*.pid
+*.pid.lock
+report.*.json
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+
+# 本地环境变量与凭据；允许提交不含真实凭据的示例模板
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.*.sample
+!.env.template
+!.env.*.template
+.secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.ppk
+*.jks
+*.keystore
+
+# 可能包含认证信息的本机客户端配置与 SSH 私钥
+.npmrc
+.netrc
+.pgpass
+.ssh/
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+
+# 本地 DSH 运行目录、数据库密码与模型凭据
+/.dsh/
+/loop-manager/
+/dsh-loop-verify-home/
+db-config.json
+credentials.json
+credentials.yaml
+credentials.yml
+.credentials
+.credentials.*
+
+# 浏览器与端到端验证脚本默认生成的截图；docs/ 中的文档截图需要提交
+/scripts/verify-*.png
+/test-results/
+
+# 临时文件、原子写入残留与安装脚本备份
+/tmp/
+/temp/
+*.tmp
+*.tmp-*
+*.bak
+*.orig
+*.rej
+*~
+
+# 编辑器个人文件；保留可共享的 VS Code 开发配置
+.idea/
+.history/
+.vscode/*
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+*.swp
+*.swo
+
+# 操作系统生成的文件
+.DS_Store
+._*
+.AppleDouble/
+Thumbs.db
+Desktop.ini
