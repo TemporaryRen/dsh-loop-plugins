@@ -10,7 +10,7 @@
  *      `sidebar.panellist` registration; the host renders its label as the
  *      button's aria-label);
  *   3. clicking that row selects our `main` panel and the page renders
- *      (header + the "新建 Loop" call to action);
+ *      (header + the "新建 Pipeline" call to action);
  *   4. the v9 Loop tab (CONTRACT.md §13.7) sits right after Agent Pipeline,
  *      switches the page to the Loop list (heading + `新建 Loop`), and its
  *      count badge matches `GET /api/state.loops`;
@@ -347,7 +347,7 @@ try {
       try {
         return await page.evaluate(`(() => {
           const text = document.body.innerText || ''
-          return text.includes('新建 Loop') && text.includes('Agent Pipeline')
+          return text.includes('新建 Pipeline') && text.includes('Agent Pipeline')
         })()`)
       } catch {
         return null
@@ -356,7 +356,7 @@ try {
     check(
       'panel renders after click',
       rendered === true,
-      rendered === true ? 'list header + 新建 Loop visible' : 'panel copy never appeared',
+      rendered === true ? 'list header + 新建 Pipeline visible' : 'panel copy never appeared',
     )
     const panelBytes = await page.screenshot(join(OUT_DIR, 'verify-panel.png'))
     console.log(`      wrote ${join(OUT_DIR, 'verify-panel.png')} (${panelBytes} bytes)`)

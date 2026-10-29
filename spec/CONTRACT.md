@@ -30,25 +30,25 @@ DSH 插件 `dsh-loop-manager`。左侧 sidebar 增加 **Loop Manager** 按钮，
 ```ts
 interface Pipeline {
   id: string
-  name: string            // 必填，trim 非空，≤50
-  desc?: string           // ≤160
-  icon?: string           // 1–2 个字符的图形字符，默认 '◈'
-  color?: string          // '' | 'blue' | 'peach' | 'purple'（对应设计里的图标底色类）
+  name: string // 必填，trim 非空，≤50
+  desc?: string // ≤160
+  icon?: string // 1–2 个字符的图形字符，默认 '◈'
+  color?: string // '' | 'blue' | 'peach' | 'purple'（对应设计里的图标底色类）
   nodes: PipelineNode[]
-  edges: PipelineEdge[]   // { from, to }
-  star?: boolean          // 收藏
-  cwd?: string            // 保留：节点 agent 的工作目录，可选
+  edges: PipelineEdge[] // { from, to }
+  star?: boolean // 收藏
+  cwd?: string // 保留：节点 agent 的工作目录，可选
   createdAt: number
   updatedAt: number
 }
 
 interface PipelineNode {
   id: string
-  name: string            // 必填，trim 非空，≤40
+  name: string // 必填，trim 非空，≤40
   type?: 'agent' | 'skill' // 缺省 'agent'（§10）
-  command: string         // 必填，agent 指令（可含 {{input}} / {{node:<id>}}）
-  skill?: string          // type='skill' 时必填：已安装 skill 的 kebab-case 名称
-  model?: { provider: string, model: string } // 可选：该节点钉住的 DSH 模型；缺省 = 跟随 Harness 默认模型
+  command: string // 必填，agent 指令（可含 {{input}} / {{node:<id>}}）
+  skill?: string // type='skill' 时必填：已安装 skill 的 kebab-case 名称
+  model?: { provider: string; model: string } // 可选：该节点钉住的 DSH 模型；缺省 = 跟随 Harness 默认模型
 }
 ```
 
@@ -65,8 +65,15 @@ Run 增加 `pipelineName`（运行历史展示用，pipeline 删除后仍可读�
 
 ```ts
 interface Run {
-  id, pipelineId, pipelineName, status, startedAt, finishedAt,
-  order: string[], nodeStates: Record<string, NodeState>, error?
+  id
+  pipelineId
+  pipelineName
+  status
+  startedAt
+  finishedAt
+  order: string[]
+  nodeStates: Record<string, NodeState>
+  error?
 }
 ```
 
@@ -77,21 +84,21 @@ interface Run {
 
 ### 9.4 HTTP API v2（在 §4 基础上）
 
-| Method | Path | Body | 说明 |
-|---|---|---|---|
-| GET | `/loop-manager/api/state` | — | `{ok, pipelines, runs, source}`；`runs` 为历史（新→旧，最多 50 条） |
-| GET | `/loop-manager/api/skills` | — | 已安装 skill 目录：`{ok, skills:[{name,description,source}]}`（供 SKILL 节点下拉框） |
-| GET | `/loop-manager/api/db` | — | PostgreSQL 配置/状态（§12） |
-| PUT | `/loop-manager/api/db` | v2 见 §12 | 保存并初始化，`readFromDb` 控制读取源 |
-| POST | `/loop-manager/api/db/test` | v2 见 §12 | 连接测试 + 建表初始化，不保存 |
-| GET | `/loop-manager/api/models` | — | DSH 模型目录：`{ok, providers:[{id,name,models:[{id,name,description?}]}], default?, failures?}`（供节点模型下拉框，与 chat composer 一致，§11） |
-| POST | `/loop-manager/api/pipelines` | v2 pipeline（节点可带 `model`） | 新建（`star` 默认 false） |
-| PUT | `/loop-manager/api/pipelines/:id` | v2 pipeline（节点可带 `model`） | 整体替换（保留 `createdAt`；`star` 省略时保留旧值） |
-| **PATCH** | `/loop-manager/api/pipelines/:id` | 任意子集 `{name?, desc?, icon?, color?, star?}` | 部分更新（星星收藏/改标题走这里） |
-| DELETE | `/loop-manager/api/pipelines/:id` | — | 删除（同时删掉其运行记录） |
-| POST | `/loop-manager/api/pipelines/:id/run` | — | 202 `{ok, run}` |
-| POST | `/loop-manager/api/runs/:runId/stop` | — | 停止 |
-| DELETE | `/loop-manager/api/runs/:runId` | — | 删除已结束记录 |
+| Method    | Path                                  | Body                                            | 说明                                                                                                                                             |
+| --------- | ------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET       | `/loop-manager/api/state`             | —                                               | `{ok, pipelines, runs, source}`；`runs` 为历史（新→旧，最多 50 条）                                                                              |
+| GET       | `/loop-manager/api/skills`            | —                                               | 已安装 skill 目录：`{ok, skills:[{name,description,source}]}`（供 SKILL 节点下拉框）                                                             |
+| GET       | `/loop-manager/api/db`                | —                                               | PostgreSQL 配置/状态（§12）                                                                                                                      |
+| PUT       | `/loop-manager/api/db`                | v2 见 §12                                       | 保存并初始化，`readFromDb` 控制读取源                                                                                                            |
+| POST      | `/loop-manager/api/db/test`           | v2 见 §12                                       | 连接测试 + 建表初始化，不保存                                                                                                                    |
+| GET       | `/loop-manager/api/models`            | —                                               | DSH 模型目录：`{ok, providers:[{id,name,models:[{id,name,description?}]}], default?, failures?}`（供节点模型下拉框，与 chat composer 一致，§11） |
+| POST      | `/loop-manager/api/pipelines`         | v2 pipeline（节点可带 `model`）                 | 新建（`star` 默认 false）                                                                                                                        |
+| PUT       | `/loop-manager/api/pipelines/:id`     | v2 pipeline（节点可带 `model`）                 | 整体替换（保留 `createdAt`；`star` 省略时保留旧值）                                                                                              |
+| **PATCH** | `/loop-manager/api/pipelines/:id`     | 任意子集 `{name?, desc?, icon?, color?, star?}` | 部分更新（星星收藏/改标题走这里）                                                                                                                |
+| DELETE    | `/loop-manager/api/pipelines/:id`     | —                                               | 删除（同时删掉其运行记录）                                                                                                                       |
+| POST      | `/loop-manager/api/pipelines/:id/run` | —                                               | 202 `{ok, run}`                                                                                                                                  |
+| POST      | `/loop-manager/api/runs/:runId/stop`  | —                                               | 停止                                                                                                                                             |
+| DELETE    | `/loop-manager/api/runs/:runId`       | —                                               | 删除已结束记录                                                                                                                                   |
 
 校验：`name` 必填 ≤50；`desc` ≤160；节点 `name` ≤40、`command` 必填；
 节点 `model` 若存在必须同时给出 `provider` 与 `model`（各 ≤64 / ≤128，trim 非空，否则 `bad-request`）；
@@ -122,22 +129,25 @@ DSH 的 `main` 面板里，DSH 已有左侧边栏，因此：
    卡片 `#FCFBF7`、文字 `#2E261C`、边框 `#E7DED0`、日志面板 `#2B1D15`；结构/字号/布局不变。
    列表页新增 hero 横幅（`AGENT WORKBENCH` 眉标 + `Make room for deep work.` 标题 +
    等宽命令条 + 右下 `READY WHEN YOU ARE.`），页头右侧显示主题标识 `EMBER / 01`。
-7. 文案：标题用 `Loop Manager`；主按钮 `新建 Loop`（产品词是 Loop，其余文案照设计稿）。
+   **表格配色（用户指定）**：内容单元格 `#FFFDF7`、表头单元格 `#F2E8D8`、表格外边框
+   `#E1CDB1`、流程表行分隔线 `#ECE0CD`（`.table` / `.table-head` / `.pipeline-row` /
+   `.history-row`）；行 hover 用同色系浅底 `#FBF6EC`。**统计信息栏 `.metrics` 同底色与外边框**
+   （`#FFFDF7` + `#E1CDB1`），与表格连成一套暖白卡片；`.metric` 之间的竖分隔线仍取 `--line`。
+7. 文案：标题用 `Loop Manager`；**Agent Pipeline 列表的主按钮是 `新建 Pipeline`**（它创建的是
+   pipeline），**Loop 列表的主按钮是 `新建 Loop`**；其余文案照设计稿。
 8. 交互对齐设计稿：点行进入编排页、`开始任务` 运行、`更多` 菜单（收藏/删除）、
    Escape 关闭弹窗、Toast、运行中禁用编辑、日志面板按节点状态追加、
    空工作流不能运行、添加连接时校验自连接/重复/环并 Toast 提示。
    **v5 起 `开始任务` 与 `停止任务` 点击后先弹确认框**（删除 Pipeline 原本就有二次确认）：
    - 开始：「开始任务？」+ 节点数 / standard mode 说明 / 模型说明，按钮 `取消` / `开始任务`；
    - 停止：「停止任务？」+ 已运行时长 / 当前节点说明，按钮 `取消` / `停止任务`。
-   确认后才发 `POST /api/pipelines/:id/run` 或 `POST /api/runs/:runId/stop`。
+     确认后才发 `POST /api/pipelines/:id/run` 或 `POST /api/runs/:runId/stop`。
 9. 节点弹窗**不再有** Skills / MCP 输入框，只有「节点名称 + Agent 命令」；
    画布节点卡副标题固定为 `Agent 指令`（因为能力都写在命令里）。
 10. 侧边栏按钮注册保持不变：`sidebar.panellist` id=`loop-manager`、label=`Loop Manager`；
     main 面板 key=`loop-manager`。
-10. 真实执行语义不变：节点仍由 host 按拓扑序串行执行真实 agent turn；日志/状态来自
+11. 真实执行语义不变：节点仍由 host 按拓扑序串行执行真实 agent turn；日志/状态来自
     `GET /api/state` 轮询（1.5s 空闲 / 0.7s 运行中），不是设计稿的模拟定时器。
-
-
 
 ## 1. 包结构
 
@@ -173,23 +183,26 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 ```ts
 interface Pipeline {
   id: string
-  name: string                 // 展示名，trim 后非空，≤200 字符
+  name: string // 展示名，trim 后非空，≤200 字符
   description?: string
-  cwd?: string                 // 节点 agent 的工作目录；空 = 宿主默认目录
+  cwd?: string // 节点 agent 的工作目录；空 = 宿主默认目录
   nodes: PipelineNode[]
   edges: PipelineEdge[]
-  createdAt: number            // epoch ms
+  createdAt: number // epoch ms
   updatedAt: number
 }
 
 interface PipelineNode {
   id: string
-  title: string                // 节点名，trim 后非空，≤200
-  prompt: string               // agent 指令（可含 {{input}} / {{node:<id>}} 占位符）
-  model?: { provider: string, model: string } // v4：节点钉住的模型；见 §11
+  title: string // 节点名，trim 后非空，≤200
+  prompt: string // agent 指令（可含 {{input}} / {{node:<id>}} 占位符）
+  model?: { provider: string; model: string } // v4：节点钉住的模型；见 §11
 }
 
-interface PipelineEdge { from: string; to: string }   // from -> to（from 先执行）
+interface PipelineEdge {
+  from: string
+  to: string
+} // from -> to（from 先执行）
 ```
 
 运行记录（只保存在内存中，同时把每个 pipeline 的最近一次 run 落盘）：
@@ -201,16 +214,16 @@ interface Run {
   status: 'running' | 'completed' | 'failed' | 'stopped'
   startedAt: number
   finishedAt?: number
-  order: string[]              // 本次运行的拓扑序（nodeId）
+  order: string[] // 本次运行的拓扑序（nodeId）
   nodeStates: Record<string, NodeState>
-  error?: string               // run 级错误
+  error?: string // run 级错误
 }
 
 interface NodeState {
   status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped'
-  sessionId?: string           // 该节点 agent 所在 session，可让用户点进去看
-  output?: string              // 该节点最终 assistant 文本（≤20000 字符截断）
-  thinking?: string            // v4：折叠展示的思考过程（≤12000 字符截断）
+  sessionId?: string // 该节点 agent 所在 session，可让用户点进去看
+  output?: string // 该节点最终 assistant 文本（≤20000 字符截断）
+  thinking?: string // v4：折叠展示的思考过程（≤12000 字符截断）
   error?: string
   startedAt?: number
   finishedAt?: number
@@ -260,6 +273,7 @@ export function renderNodePrompt(node, nodes, edges, outputs) // -> string
 前缀路由：`/loop-manager`（`ctx.webServer.register({ kind: 'prefix', path: '/loop-manager', handler })`）。
 
 鉴权（重要）：
+
 - 插件第二个参数就是 loader 传来的 config：`export function apply(ctx, config = {})`，
   用 `const requireAuth = config?.requireAuth !== false`（默认 `true`）。
 - `requireAuth` 为 true 时，除 `GET /loop-manager/api/ping` 外的每个请求先做
@@ -271,19 +285,19 @@ export function renderNodePrompt(node, nodes, edges, outputs) // -> string
 所有响应是 JSON，`content-type: application/json; charset=utf-8`。
 统一信封：成功 `{ ok: true, ...payload }`，失败 `{ ok: false, code, error }`（HTTP 400/401/404/409/500）。
 
-| Method | Path | Body / Query | 成功响应 |
-|---|---|---|---|
-| GET | `/loop-manager/api/state` | — | `{ ok:true, pipelines, runs, source: 'local'|'db', dbError? }` |
-| GET | `/loop-manager/api/models` | — | `{ ok:true, providers, default?, failures? }`（§11；与 chat composer 同一目录） |
-| GET | `/loop-manager/api/db` | — | `{ ok:true, db: { configured, readFromDb, connected, initialized, error, config? } }`（密码不返回） |
-| PUT | `/loop-manager/api/db` | `{host, port, database, user, password?, ssl?, readFromDb?}` | 保存 + 连接 + 建表初始化 + 空库导入；返回 `{ok, db, imported}` |
-| POST | `/loop-manager/api/db/test` | 同上（不保存） | 测试连接并初始化 schema |
-| POST | `/loop-manager/api/pipelines` | `{name, description?, cwd?, nodes, edges}` | `{ ok:true, pipeline }` |
-| PUT | `/loop-manager/api/pipelines/:id` | 同上（整体替换） | `{ ok:true, pipeline }` |
-| DELETE | `/loop-manager/api/pipelines/:id` | — | `{ ok:true }` |
-| POST | `/loop-manager/api/pipelines/:id/run` | — | `{ ok:true, run }`（202） |
-| POST | `/loop-manager/api/runs/:runId/stop` | — | `{ ok:true, run }` |
-| DELETE | `/loop-manager/api/runs/:runId` | — | `{ ok:true }`（只允许非 running） |
+| Method | Path                                  | Body / Query                                                 | 成功响应                                                                                            |
+| ------ | ------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| GET    | `/loop-manager/api/state`             | —                                                            | `{ ok:true, pipelines, runs, source: 'local'                                                        | 'db', dbError? }` |
+| GET    | `/loop-manager/api/models`            | —                                                            | `{ ok:true, providers, default?, failures? }`（§11；与 chat composer 同一目录）                     |
+| GET    | `/loop-manager/api/db`                | —                                                            | `{ ok:true, db: { configured, readFromDb, connected, initialized, error, config? } }`（密码不返回） |
+| PUT    | `/loop-manager/api/db`                | `{host, port, database, user, password?, ssl?, readFromDb?}` | 保存 + 连接 + 建表初始化 + 空库导入；返回 `{ok, db, imported}`                                      |
+| POST   | `/loop-manager/api/db/test`           | 同上（不保存）                                               | 测试连接并初始化 schema                                                                             |
+| POST   | `/loop-manager/api/pipelines`         | `{name, description?, cwd?, nodes, edges}`                   | `{ ok:true, pipeline }`                                                                             |
+| PUT    | `/loop-manager/api/pipelines/:id`     | 同上（整体替换）                                             | `{ ok:true, pipeline }`                                                                             |
+| DELETE | `/loop-manager/api/pipelines/:id`     | —                                                            | `{ ok:true }`                                                                                       |
+| POST   | `/loop-manager/api/pipelines/:id/run` | —                                                            | `{ ok:true, run }`（202）                                                                           |
+| POST   | `/loop-manager/api/runs/:runId/stop`  | —                                                            | `{ ok:true, run }`                                                                                  |
+| DELETE | `/loop-manager/api/runs/:runId`       | —                                                            | `{ ok:true }`（只允许非 running）                                                                   |
 
 错误 code 取值：
 `bad-request`（400）、`invalid-graph`（400）、`pipeline-not-found`（404）、`run-not-found`（404）、
@@ -315,10 +329,12 @@ await ctx.sessionController.selectModel({ sessionId: created.sessionId, provider
 
 // 2. 记录起点 seq，再投递指令
 const startSeq = lastSeq(agent.session.snapshotEvents())
-agent.followup(createUserMessage({
-  content: [{ type: 'text', text: prompt }],
-  source: { kind: 'loop-manager' },
-}))
+agent.followup(
+  createUserMessage({
+    content: [{ type: 'text', text: prompt }],
+    source: { kind: 'loop-manager' },
+  }),
+)
 await ctx.sessions.flush(agent.session)
 
 // 3. 轮询 session 事件，等待本次 turn 结束
@@ -331,6 +347,7 @@ await ctx.sessions.flush(agent.session)
 ```
 
 要求：
+
 - 轮询间隔 400ms；单节点默认超时 30 分钟（超时 → `agent.cancel({ kind: 'user' })`，节点 failed）。
 - 节点失败判定：`turn/end.reason.kind !== 'completed'`（`aborted`/`error` 均为失败）或超时或抛错。
 - 停止 run：对当前 running 节点 `agent.cancel({ kind: 'user' })`，后续节点 skipped。
@@ -380,7 +397,9 @@ window.__ModuleLoader__.load({
     // ...组件...
     const name = 'dsh-loop-manager'
     const inject = ['slots']
-    function apply(ctx) { /* 注册样式 + main 面板 + sidebar 行 */ }
+    function apply(ctx) {
+      /* 注册样式 + main 面板 + sidebar 行 */
+    }
     return { name, inject, apply }
   },
 })
@@ -398,18 +417,28 @@ window.__ModuleLoader__.load({
 const PANEL_ID = 'loop-manager'
 
 // 左侧 sidebar 的一行：图标 + label，点击后 layout 自动 selectPanel(PANEL_ID)
-ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
-  name: 'sidebar.panellist',
-  id: PANEL_ID,
-  order: 5,
-  label: () => 'Loop Manager',
-}, (owner) => h(LoopGlyph, { size: owner?.size ?? 18 })))
+ctx.slots.inject('sidebar.panellist', () =>
+  ctx.slots.register(
+    {
+      name: 'sidebar.panellist',
+      id: PANEL_ID,
+      order: 5,
+      label: () => 'Loop Manager',
+    },
+    (owner) => h(LoopGlyph, { size: owner?.size ?? 18 }),
+  ),
+)
 
 // 主页（main 插槽里的一个 panel）
-ctx.slots.inject('main', () => ctx.slots.register({
-  name: 'main',
-  key: PANEL_ID,
-}, () => h(LoopPage)))
+ctx.slots.inject('main', () =>
+  ctx.slots.register(
+    {
+      name: 'main',
+      key: PANEL_ID,
+    },
+    () => h(LoopPage),
+  ),
+)
 
 // 样式：apply() 内一次性注入 <style data-dsh-plugin="dsh-loop-manager">
 ```
@@ -432,12 +461,14 @@ ctx.slots.inject('main', () => ctx.slots.register({
 ### 页面结构（中文 UI）
 
 **列表视图**（默认）：
-- 标题 `Loop Manager` + 副标题说明；右侧「新建 Loop」按钮。
+
+- 标题 `Loop Manager` + 副标题说明；右侧「新建 Pipeline」按钮（创建 pipeline，不是 Loop）。
 - pipeline 卡片列表：名称、节点数、最近运行状态徽标（运行中/成功/失败/已停止 + 时间）、
   「开始任务」「编辑」「删除」按钮。空态提示"还没有 loop，点击新建开始"。
 - 「开始任务」→ 确认框 → `POST /api/pipelines/:id/run`，然后切到运行视图。
 
 **编辑视图**（新建 / 编辑）：
+
 - 名称输入；可选工作目录输入。
 - 节点列表：每行 title 输入 + prompt 多行 textarea + 删除按钮；「添加节点」。
 - 依赖关系：每个节点一块「前置节点」多选（checkbox 列出其它节点）→ 映射成 edges。
@@ -446,6 +477,7 @@ ctx.slots.inject('main', () => ctx.slots.register({
 - 保存 → `POST` 或 `PUT`；取消返回列表。
 
 **运行视图**：
+
 - pipeline 名称 + run 状态 + 「停止」按钮（running 时）；点击先弹停止确认框。
 - 按 `run.order` 列出节点：状态点、标题、耗时、模型、session 链接（`sessionId`，点击用
   `window.location.assign('/?session=' + sessionId)` 之类不必实现，显示 id 即可）。
@@ -484,10 +516,10 @@ ctx.slots.inject('main', () => ctx.slots.register({
 interface PipelineNode {
   id: string
   name: string
-  type: 'agent' | 'skill'   // 缺省 'agent'（兼容旧数据）
-  command?: string          // agent: 必填（完整指令）；skill: 可选（补充信息）
-  skill?: string            // skill 节点必填：已安装 skill 的 kebab-case 名称
-  model?: { provider: string, model: string } // 可选：该节点钉住的 DSH 模型（§11）
+  type: 'agent' | 'skill' // 缺省 'agent'（兼容旧数据）
+  command?: string // agent: 必填（完整指令）；skill: 可选（补充信息）
+  skill?: string // skill 节点必填：已安装 skill 的 kebab-case 名称
+  model?: { provider: string; model: string } // 可选：该节点钉住的 DSH 模型（§11）
 }
 ```
 
@@ -550,10 +582,10 @@ project > user > bundled 覆盖。结果在 HTTP 层缓存 15 秒。
 ```ts
 interface ModelsResponse {
   ok: true
-  providers: Array<{ id: string, name: string, models: Array<{ id: string, name: string, description?: string }> }>
-  default?: { provider: string, model: string }
-  failures?: Array<{ id: string, name: string, message: string }>
-  unavailable?: true   // 旧宿主没有 catalog 方法时
+  providers: Array<{ id: string; name: string; models: Array<{ id: string; name: string; description?: string }> }>
+  default?: { provider: string; model: string }
+  failures?: Array<{ id: string; name: string; message: string }>
+  unavailable?: true // 旧宿主没有 catalog 方法时
 }
 ```
 
@@ -594,8 +626,8 @@ interface ModelsResponse {
 
 ## 12. v7：PostgreSQL 持久化
 
-pipeline、节点与运行记录在保留本地 `state.json` 的同时，可镜像到 PostgreSQL；首页导航
-「已收藏」后新增「数据库配置」入口。配置弹窗最上方是「从数据库读取」开关。
+Agent Pipeline、Loop、节点与运行记录在保留本地 `state.json` 的同时，可镜像到 PostgreSQL；
+首页导航「已收藏」后新增「数据库配置」入口。配置弹窗最上方是「从数据库读取」开关。
 
 ### 12.1 配置与文件
 
@@ -619,25 +651,33 @@ loop_manager_pipelines  (id TEXT PK, name TEXT, description TEXT, icon TEXT, col
 loop_manager_runs       (id TEXT PK, pipeline_id TEXT, pipeline_name TEXT, status TEXT,
                          started_at BIGINT, finished_at BIGINT, order_ids JSONB,
                          node_states JSONB, error TEXT, updated_at BIGINT)
+loop_manager_loops      (id TEXT PK, name TEXT, description TEXT, icon TEXT, color TEXT,
+                         star BOOLEAN, steps JSONB, created_at BIGINT, updated_at BIGINT)
+loop_manager_loop_runs  (id TEXT PK, loop_id TEXT, loop_name TEXT, status TEXT,
+                         started_at BIGINT, finished_at BIGINT, order_ids JSONB,
+                         step_states JSONB, error TEXT, updated_at BIGINT)
 ```
 
-`loop_manager_meta` 写入 `schema_version = 1`；索引建在 `runs(pipeline_id)` 与
-`runs(started_at DESC)`。nodes / edges / order / nodeStates 一律以 JSONB 保存
-（节点 `model`、run 的 `thinking` 都在里面）。
+`loop_manager_meta` 写入 `schema_version = 2`（v9 新增两张 Loop 表；旧库重连时按
+`IF NOT EXISTS` 补齐）；索引建在 `runs(pipeline_id)` / `runs(started_at DESC)` /
+`loop_runs(loop_id)` / `loop_runs(started_at DESC)`。nodes / edges / order / nodeStates /
+steps / stepStates 一律以 JSONB 保存（节点 `model`、run 的 `thinking`、Loop 的门禁配置都在里面）。
 
 ### 12.3 写路径（双写）
 
 - 本地 `state.json` 仍是插件自身读写的第一落点；`createStore({ mirror })` 在
-  `upsertPipeline` / `removePipeline` / `setRun` / `removeRun` 成功后把同一份记录投递到
-  PostgreSQL mirror 队列。mirror 串行、异步、失败只记录 `db.status.error`，不影响本地操作。
-- 删除 pipeline 时数据库同时删除其 runs（按 pipeline_id）。
+  `upsertPipeline` / `removePipeline` / `setRun` / `removeRun` / `upsertLoop` /
+  `removeLoop` / `setLoopRun` / `removeLoopRun` 成功后把同一份记录投递到 PostgreSQL
+  mirror 队列。mirror 串行、异步、失败只记录 `db.status.error`，不影响本地操作。
+- 删除 pipeline 时数据库同时删除其 runs（按 pipeline_id）；删除 Loop 时同时删除其
+  loop runs（按 loop_id）。Loop 与 Pipeline 的 `star`（收藏）随行一起写入。
 - mirror 错误不会让 HTTP 500；`GET /api/db` 暴露最近错误。
 
 ### 12.4 读路径（开关）
 
 - `readFromDb=false`（默认）：`/api/state` 读本地 store。
 - `readFromDb=true`：`/api/state` 先 `flush()` mirror 队列，再从 PostgreSQL 读取
-  pipelines + runs（最近 50 条）；无本地 running run 时用数据库快照替换内存 store
+  pipelines + runs + loops + loopRuns（两类 run 各取最近 50 条）；无本地 running run 时用数据库快照替换内存 store
   （不重写本地文件）；有 running run 时把本地 running 对象合并进 runs，保证实时进度。
 - 数据库读失败：回退本地返回，并在响应里带 `dbError`，前端不阻塞。
 - UI 位置：「数据库配置」弹窗（checkbox + switch 开关在表单最上方），字段 host / port / database /
@@ -646,8 +686,9 @@ loop_manager_runs       (id TEXT PK, pipeline_id TEXT, pipeline_name TEXT, statu
 ### 12.5 首次连接 / 启动
 
 - `PUT /api/db` 或 `POST /api/db/test` 会连接并执行建表初始化；PUT 成功后才保存配置。
-- 保存后若数据库为空（pipelines 计数 0），把当前本地 pipelines + runs 导入；
-  实际导入条数通过 `imported` 返回给 UI Toast。
+- 保存后若数据库为空（pipelines 计数 0），把当前本地 pipelines + loops + runs + loopRuns
+  导入；`imported` 返回 `importedPipelines` / `importedRuns` / `importedLoops` /
+  `importedLoopRuns` 四个计数，UI Toast 逐项展示。
 - 插件启动时：本地 store 加载完成后，若 PostgreSQL 已配置且可连接，同样执行空库导入；
   若 `readFromDb=true` 则把数据库快照灌入内存 store（无 running run 时）。
 - 启动连接失败不影响插件加载：`/api/state` 继续用本地，`/api/db` 暴露错误，
@@ -664,10 +705,13 @@ loop_manager_runs       (id TEXT PK, pipeline_id TEXT, pipeline_name TEXT, statu
 ### 12.7 验收
 
 - 首次连接自动建表；`loop_manager_meta.schema_version` 存在。
-- 空库首次保存时导入本地数据（`importedPipelines` / `importedRuns` 与本地一致）。
+- 空库首次保存时导入本地数据（`importedPipelines` / `importedRuns` / `importedLoops` /
+  `importedLoopRuns` 与本地一致）。
 - 开关关闭时 `/api/state.source === 'local'`；打开时为 `'db'`。
 - 创建/修改/删除 pipeline、开始/停止 run 后，PostgreSQL 对应行与本地一致；
   run 的 `nodeStates`（含 output / thinking）可读。
+- 创建/修改/删除 Loop、收藏 Loop、开始/停止 LoopRun 后，`loop_manager_loops` /
+  `loop_manager_loop_runs` 与本地一致；`step_states`（含门禁判定与输出）可读。
 - 数据库不可达时插件仍可用本地；`GET /api/db` 有可读 error。
 
 ---
@@ -693,31 +737,31 @@ loop_manager_runs       (id TEXT PK, pipeline_id TEXT, pipeline_name TEXT, statu
 ```ts
 interface Loop {
   id: string
-  name: string              // 必填，trim 非空，≤50
-  desc?: string             // ≤160
-  icon?: string             // 默认 '⟳'
-  color?: string            // '' | 'blue' | 'peach' | 'purple'
-  star?: boolean            // 缺省 false
-  steps: LoopStep[]         // ≥1 且 ≤20，数组顺序即执行顺序
+  name: string // 必填，trim 非空，≤50
+  desc?: string // ≤160
+  icon?: string // 默认 '⟳'
+  color?: string // '' | 'blue' | 'peach' | 'purple'
+  star?: boolean // 缺省 false
+  steps: LoopStep[] // ≥1 且 ≤20，数组顺序即执行顺序
   createdAt: number
   updatedAt: number
 }
 
 interface LoopStep {
-  id: string                // 客户端提供；缺省由服务端生成
-  pipelineId: string        // 引用 Pipeline.id：保存时该 Pipeline 必须存在
-  gate: LoopGate            // 本组门禁节点，恒在该组 pipeline 之后
+  id: string // 客户端提供；缺省由服务端生成
+  pipelineId: string // 引用 Pipeline.id：保存时该 Pipeline 必须存在
+  gate: LoopGate // 本组门禁节点，恒在该组 pipeline 之后
 }
 
 interface LoopGate {
-  id: string                // 缺省 '<stepId>-gate'
-  name: string              // 必填，trim 非空，≤40；缺省 '门禁'
-  type: 'agent' | 'skill'   // 缺省 'agent'
-  command: string           // agent：判断要求全文（必填）；skill：补充信息（可为空）
-  skill?: string            // type='skill' 时必填，kebab-case
-  model?: { provider: string, model: string }  // 可选，语义同 §11.2
-  autoLoop: boolean         // 缺省 false：FALSE 时等待人工点「重新循环」
-  maxIterations: number     // 自动循环时 pipeline 执行次数上限，缺省 3，范围 1–20
+  id: string // 缺省 '<stepId>-gate'
+  name: string // 必填，trim 非空，≤40；缺省 '门禁'
+  type: 'agent' | 'skill' // 缺省 'agent'
+  command: string // agent：判断要求全文（必填）；skill：补充信息（可为空）
+  skill?: string // type='skill' 时必填，kebab-case
+  model?: { provider: string; model: string } // 可选，语义同 §11.2
+  autoLoop: boolean // 缺省 false：FALSE 时等待人工点「重新循环」
+  maxIterations: number // 自动循环时 pipeline 执行次数上限，缺省 3，范围 1–20
 }
 ```
 
@@ -760,13 +804,14 @@ export function parseGateDecision(text)                // -> 'TRUE' | 'FALSE' | 
   `gateError='门禁没有给出 TRUE/FALSE 结论'`，保留原始 `gateOutput` 供诊断。
 
 解析优先级（纯函数，单测固定）：
+
 1. JSON 对象里的 `pass` / `ok` / `decision` / `verdict`（布尔或字符串，大小写不敏感）；
 2. `<verdict>TRUE</verdict>` 之类的标签；
 3. 单独成行（去掉前后 markdown 粗体/反引号/标点后）的 `TRUE` / `FALSE`（取第一条）；
 4. `结论|结果|判定|verdict|decision` 后跟 `:`/`：` 再跟 `TRUE|FALSE`（取第一条）；
 5. 全文首个独立的 `TRUE` / `FALSE` 单词（大小写不敏感）；
 6. 都不命中 → `UNKNOWN`。
-中文 `通过`/`不通过` 只在第 4 条的显式结论行里识别（避免正文里的“不通过风险”之类误判）。
+   中文 `通过`/`不通过` 只在第 4 条的显式结论行里识别（避免正文里的“不通过风险”之类误判）。
 
 **aggregatePipelineOutput**：按 `run.order` 顺序拼接每个节点
 `【<节点名>】\n<nodeStates[id].output>`，段间 `\n\n`，跳过空输出；总长截断到 20000 字符。
@@ -797,25 +842,25 @@ Agent Pipeline「<pipeline.name>」本次运行结果：
 interface LoopRun {
   id: string
   loopId: string
-  loopName: string                       // 运行历史展示用，loop 删除后仍可读
+  loopName: string // 运行历史展示用，loop 删除后仍可读
   status: 'running' | 'awaiting' | 'completed' | 'failed' | 'stopped'
   startedAt: number
   finishedAt?: number
-  order: string[]                        // 本次运行的 stepId 顺序
+  order: string[] // 本次运行的 stepId 顺序
   stepStates: Record<string, LoopStepState>
   error?: string
 }
 
 interface LoopStepState {
   status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'awaiting'
-  iteration: number                      // 本组 pipeline 已执行次数（0 = 尚未执行）
-  pipelineRunId?: string                 // 该组 pipeline 的普通 Run id（同时出现在 /api/state.runs）
+  iteration: number // 本组 pipeline 已执行次数（0 = 尚未执行）
+  pipelineRunId?: string // 该组 pipeline 的普通 Run id（同时出现在 /api/state.runs）
   pipelineStatus?: 'running' | 'completed' | 'failed' | 'stopped'
-  pipelineOutput?: string                // 交给门禁判断的聚合输出（≤20000）
+  pipelineOutput?: string // 交给门禁判断的聚合输出（≤20000）
   gateStatus: 'pending' | 'running' | 'passed' | 'failed' | 'awaiting' | 'skipped'
   decision?: 'TRUE' | 'FALSE' | 'UNKNOWN'
-  gateOutput?: string                    // 门禁最终文本（≤20000）
-  gateThinking?: string                  // 折叠展示（≤12000）
+  gateOutput?: string // 门禁最终文本（≤20000）
+  gateThinking?: string // 折叠展示（≤12000）
   gateSessionId?: string
   gateError?: string
   error?: string
@@ -876,9 +921,9 @@ loop_manager_loop_runs  (id TEXT PK, loop_id TEXT, loop_name TEXT, status TEXT,
                          step_states JSONB, error TEXT, updated_at BIGINT)
 ```
 
-  mirror 方法：`upsertLoop` / `removeLoop`（连带删除其 loop_runs）/ `setLoopRun` /
-  `removeLoopRun`；`loadState()` 返回 `{pipelines, runs, loops, loopRuns}`；
-  `backfillIfEmpty` 一并导入 loops 与 loopRuns。读路径开关、空库导入、失败回退语义与 §12 一致。
+mirror 方法：`upsertLoop` / `removeLoop`（连带删除其 loop_runs）/ `setLoopRun` /
+`removeLoopRun`；`loadState()` 返回 `{pipelines, runs, loops, loopRuns}`；
+`backfillIfEmpty` 一并导入 loops 与 loopRuns。读路径开关、空库导入、失败回退语义与 §12 一致。
 
 ### 13.5 Loop 引擎（lib/loopengine.ts）
 
@@ -912,7 +957,7 @@ export function createLoopEngine({
 
 ### 13.6 HTTP API（在 §9.4 / §12 基础上新增）
 
-| Method | Path | Body | 成功响应 |
-|---|---|---|---|
-| GET | `/loop-manager/api/state` | — | 增加 `loops`, `loopRuns`（新→旧，最多 50） |
-| POST | `/loop-manager/api/loops` | Loop（无 id/时间戳） | `{ ok:true, loop }` |
+| Method | Path                      | Body                 | 成功响应                                   |
+| ------ | ------------------------- | -------------------- | ------------------------------------------ |
+| GET    | `/loop-manager/api/state` | —                    | 增加 `loops`, `loopRuns`（新→旧，最多 50） |
+| POST   | `/loop-manager/api/loops` | Loop（无 id/时间戳） | `{ ok:true, loop }`                        |

@@ -453,7 +453,7 @@ test('mirror hooks queue parameterized upserts and deletes', async () => {
     desc: '',
     icon: '⟳',
     color: '',
-    star: false,
+    star: true,
     steps: [
       {
         id: 's1',
@@ -490,6 +490,8 @@ test('mirror hooks queue parameterized upserts and deletes', async () => {
   assert.ok(sql.some((text) => /DELETE FROM loop_manager_runs WHERE pipeline_id = \$1/.test(text)))
   assert.ok(sql.some((text) => /DELETE FROM loop_manager_pipelines WHERE id = \$1/.test(text)))
   assert.ok(sql.some((text) => /INSERT INTO loop_manager_loops/.test(text)))
+  const loopInsert = pool.queries.find((entry) => /INSERT INTO loop_manager_loops/.test(entry.sql))
+  assert.equal(loopInsert.params[5], true, 'the Loop favorite flag is mirrored into PostgreSQL')
   assert.ok(sql.some((text) => /INSERT INTO loop_manager_loop_runs/.test(text)))
   assert.ok(sql.some((text) => /DELETE FROM loop_manager_loop_runs WHERE id = \$1/.test(text)))
   assert.ok(sql.some((text) => /DELETE FROM loop_manager_loop_runs WHERE loop_id = \$1/.test(text)))
@@ -576,6 +578,7 @@ test('loadState maps database rows back to local shapes (pipelines, runs, loops,
   assert.equal(state.loops[0].id, 'l1')
   assert.equal(state.loops[0].desc, 'loop desc')
   assert.equal(state.loops[0].steps[0].pipelineId, 'p1')
+  assert.equal(state.loops[0].star, true, 'the Loop favorite flag survives a PostgreSQL round trip')
   assert.equal(state.loopRuns.length, 1)
   assert.equal(state.loopRuns[0].id, 'lrun1')
   assert.equal(state.loopRuns[0].loopName, 'L')

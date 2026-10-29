@@ -190,7 +190,12 @@ interface ClientApiEnvelope {
   run: ClientRun
   loopRun: ClientLoopRun
   db?: ClientDbStatus
-  imported?: { importedPipelines: number; importedRuns: number }
+  imported?: {
+    importedPipelines: number
+    importedRuns: number
+    importedLoops?: number
+    importedLoopRuns?: number
+  }
 }
 interface ClientApiError extends Error {
   code?: string

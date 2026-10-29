@@ -57,15 +57,23 @@ function createReact(onEffect?: any) {
   }
 }
 
-/** A minimal element stub: enough for the bundle's querySelector/render path. */
+/**
+ * A minimal element stub: enough for the bundle's querySelector/render path.
+ *
+ * Query results are cached per selector so `app.innerHTML` written by one render
+ * stays readable from the test. Click/submit listeners are recorded so a test can
+ * dispatch the handlers the bundle registered on the mount root.
+ */
 function createElementStub(className: any) {
+  const looked = new Map<string, any>()
+  const listeners = new Map<string, Array<(event: any) => void>>()
   const element = {
     className: className || '',
     innerHTML: '',
     textContent: '',
     value: '',
     style: {},
-    dataset: {},
+    dataset: {} as Record<string, string>,
     children: [] as any[],
     classList: {
       add() {},
@@ -75,18 +83,49 @@ function createElementStub(className: any) {
         return false
       },
     },
-    addEventListener() {},
-    removeEventListener() {},
-    querySelector() {
-      return createElementStub('')
+    addEventListener(type: string, listener: (event: any) => void) {
+      const list = listeners.get(type) ?? []
+      list.push(listener)
+      listeners.set(type, list)
+    },
+    removeEventListener(type: string, listener: (event: any) => void) {
+      const list = listeners.get(type)
+      if (list === undefined) return
+      const index = list.indexOf(listener)
+      if (index >= 0) list.splice(index, 1)
+    },
+    /** Test-only: run the listeners the bundle bound for one event type. */
+    dispatch(type: string, event: any) {
+      for (const listener of listeners.get(type) ?? []) listener(event)
+    },
+    querySelector(selector: string) {
+      const cached = looked.get(selector)
+      if (cached !== undefined) return cached
+      const created = createElementStub('')
+      looked.set(selector, created)
+      return created
     },
     querySelectorAll() {
       return []
+    },
+    /** Events are dispatched into the mount root; everything it renders is "inside". */
+    contains() {
+      return true
     },
     focus() {},
     setSelectionRange() {},
   }
   return element
+}
+
+/**
+ * One click target for the bundle's delegated `onClick`: it answers `closest()`
+ * with the element carrying the `data-*` attributes under test.
+ */
+function createClickTarget(button: any, ElementClass: any) {
+  const target = Object.create(ElementClass.prototype)
+  target.closest = (selector: string) => (selector === 'summary' ? null : button)
+  return target
 }
 
 /** A `document.head` that records injected styles. */
@@ -148,9 +187,12 @@ function createCtx() {
  * Evaluate the bundle in a fresh vm sandbox.
  * @returns {Promise<{registration: any, source: string}>}
  */
-async function loadBundle(options: any = {}): Promise<{ registration: any; source: string }> {
+async function loadBundle(options: any = {}): Promise<{ registration: any; source: string; Element: any }> {
   const registrations: any[] = []
+  // The bundle narrows click targets with `instanceof Element`; give the sandbox one.
+  const Element = class Element {}
   const sandbox: Record<string, any> = {
+    Element,
     console: { warn() {}, error() {}, log() {} },
     setTimeout,
     clearTimeout,
@@ -170,7 +212,7 @@ async function loadBundle(options: any = {}): Promise<{ registration: any; sourc
   const source = await readFile(BUNDLE_URL, 'utf8')
   vm.runInContext(source, sandbox, { filename: 'lib/client.js' })
   assert.equal(registrations.length, 1, 'bundle must register exactly one factory')
-  return { registration: registrations[0], source }
+  return { registration: registrations[0], source, Element }
 }
 
 /** Run the factory with a recording require. */
@@ -370,4 +412,220 @@ test('the panel component mounts the workbench and polls the state API', async (
     for (const dispose of disposers) dispose()
   }
   assert.equal(root.innerHTML, '', 'unmount clears the mounted DOM')
+})
+
+// ---------------------------------------------------------------------------
+// 已收藏 (favorites) — Pipelines AND Loops
+// ---------------------------------------------------------------------------
+
+/**
+ * Mount the workbench with one canned /state body.
+ * @returns root element, recorded requests, the sandbox Element class, disposer.
+ */
+async function mountWorkbench(
+  stateBody: Record<string, any>,
+  fetchOverride?: (url: string, init: any) => Promise<any>,
+) {
+  const requests: Array<{ url: string; init: any }> = []
+  const sandboxFetch = async (url: any, init: any) => {
+    requests.push({ url: String(url), init })
+    if (fetchOverride !== undefined) return fetchOverride(String(url), init)
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return {
+          ok: true,
+          pipelines: [] as any[],
+          runs: [] as any[],
+          loops: [] as any[],
+          loopRuns: [] as any[],
+          ...stateBody,
+        }
+      },
+    }
+  }
+  const documentStub = createDocument()
+  const { registration, source, Element } = await loadBundle({ fetch: sandboxFetch, document: documentStub })
+  const { ctx, registered } = createCtx()
+  const root = createElementStub('lm-root')
+  const disposers: any[] = []
+  const react = createReact((dispose: any) => {
+    if (typeof dispose === 'function') disposers.push(dispose)
+  })
+  react.useRef = () => ({ current: root })
+  const { exports } = materialize(registration, react)
+  exports.apply(ctx)
+  registered[1].component().type()
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  return {
+    root,
+    source,
+    requests,
+    Element,
+    dispose() {
+      for (const dispose of disposers) dispose()
+    },
+  }
+}
+
+/** One Loop row as /state returns it. */
+function loopWire(id: string, name: string, star: boolean) {
+  return { id, name, desc: '', icon: '⟳', color: '', star, steps: [], createdAt: 1, updatedAt: 1 }
+}
+
+/** One Pipeline row as /state returns it. */
+function pipelineWire(id: string, name: string, star: boolean) {
+  return { id, name, desc: '', icon: '◈', color: '', star, nodes: [], edges: [], createdAt: 1, updatedAt: 1 }
+}
+
+test('已收藏 lists starred Loops, not just Pipelines', async () => {
+  const mounted = await mountWorkbench({
+    pipelines: [pipelineWire('p-star', '收藏的流水线', true), pipelineWire('p-plain', '普通流水线', false)],
+    loops: [loopWire('loop-star', '收藏的循环', true), loopWire('loop-plain', '普通循环', false)],
+  })
+  try {
+    assert.ok(mounted.source.includes('function favoritesMarkup'), 'the favorites view exists')
+    assert.ok(
+      mounted.source.includes('state.loops.filter((loop) => loop.star)'),
+      'collected Loops are filtered by star',
+    )
+    mounted.root.dispatch('click', { target: createClickTarget({ dataset: { nav: 'star' } }, mounted.Element) })
+    const app = mounted.root.querySelector('.lm-app')
+    assert.ok(app.innerHTML.includes('<h1>已收藏</h1>'), 'the 已收藏 view is rendered')
+    assert.ok(app.innerHTML.includes('收藏的循环'), 'a starred Loop appears in 已收藏')
+    assert.ok(app.innerHTML.includes('收藏的流水线'), 'a starred Pipeline appears in 已收藏')
+    assert.ok(!app.innerHTML.includes('普通循环'), 'an unstarred Loop is hidden')
+    assert.ok(!app.innerHTML.includes('普通流水线'), 'an unstarred Pipeline is hidden')
+  } finally {
+    mounted.dispose()
+  }
+})
+
+test('已收藏 shows the empty state when nothing is starred', async () => {
+  const mounted = await mountWorkbench({
+    pipelines: [pipelineWire('p-1', '普通流水线', false)],
+    loops: [loopWire('loop-1', '普通循环', false)],
+  })
+  try {
+    mounted.root.dispatch('click', { target: createClickTarget({ dataset: { nav: 'star' } }, mounted.Element) })
+    const app = mounted.root.querySelector('.lm-app')
+    assert.ok(app.innerHTML.includes('还没有收藏'), 'the favorites empty state is shown')
+  } finally {
+    mounted.dispose()
+  }
+})
+
+test('the Loop 「收藏」 action PATCHes the loop with star', async () => {
+  const mounted = await mountWorkbench({ loops: [loopWire('loop-1', '循环配置', false)] })
+  try {
+    const button = { dataset: { action: 'toggle-loop-star', targetLoop: 'loop-1' } }
+    mounted.root.dispatch('click', { target: createClickTarget(button, mounted.Element) })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    const patch = mounted.requests.find((request) => request.url === '/loop-manager/api/loops/loop-1')
+    assert.ok(patch, 'PATCH /api/loops/:id was issued')
+    assert.equal(patch.init.method, 'PATCH')
+    assert.deepEqual(JSON.parse(patch.init.body), { star: true }, '收藏 flips the loop star on')
+  } finally {
+    mounted.dispose()
+  }
+})
+
+test('the Loop 「取消收藏」 action clears the star again', async () => {
+  const mounted = await mountWorkbench({ loops: [loopWire('loop-1', '循环配置', true)] })
+  try {
+    const button = { dataset: { action: 'toggle-loop-star', targetLoop: 'loop-1' } }
+    mounted.root.dispatch('click', { target: createClickTarget(button, mounted.Element) })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    const patch = mounted.requests.find((request) => request.url === '/loop-manager/api/loops/loop-1')
+    assert.ok(patch, 'PATCH /api/loops/:id was issued')
+    assert.deepEqual(JSON.parse(patch.init.body), { star: false }, '取消收藏 clears the loop star')
+  } finally {
+    mounted.dispose()
+  }
+})
+
+test('the database modal reports Loop imports alongside pipelines', async () => {
+  const mounted = await mountWorkbench({}, async (url, init) => {
+    if (url === '/loop-manager/api/db' && init?.method === 'PUT') {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            ok: true,
+            db: { configured: true, connected: true, initialized: true, readFromDb: false, error: null, config: null },
+            imported: { importedPipelines: 1, importedRuns: 2, importedLoops: 3, importedLoopRuns: 4 },
+          }
+        },
+      }
+    }
+    if (url === '/loop-manager/api/db') {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            ok: true,
+            db: {
+              configured: false,
+              connected: false,
+              initialized: false,
+              readFromDb: false,
+              error: null,
+              config: null,
+            },
+          }
+        },
+      }
+    }
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return { ok: true, pipelines: [], runs: [], loops: [], loopRuns: [] }
+      },
+    }
+  })
+  try {
+    assert.ok(
+      mounted.source.includes('Agent Pipeline、Loop、节点与运行记录同步到 PostgreSQL'),
+      'the database modal says Loops are synced too',
+    )
+    mounted.root.dispatch('click', { target: createClickTarget({ dataset: { db: '1' } }, mounted.Element) })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    const form = mounted.root.querySelector('.lm-overlay').querySelector('form')
+    form.querySelector('.lm-field-db-host').value = '127.0.0.1'
+    form.querySelector('.lm-field-db-port').value = '5432'
+    form.querySelector('.lm-field-db-database').value = 'postgres'
+    form.querySelector('.lm-field-db-user').value = 'postgres'
+    form.dispatch('submit', { preventDefault() {} })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    const toast = mounted.root.querySelector('.lm-toast')
+    assert.ok(toast.textContent.includes('3 个 Loop'), `Loop import count is reported: ${toast.textContent}`)
+    assert.ok(toast.textContent.includes('4 条 Loop 运行记录'), 'LoopRun import count is reported')
+    assert.ok(toast.textContent.includes('1 条 pipeline'), 'pipeline import count is still reported')
+  } finally {
+    mounted.dispose()
+  }
+})
+
+test('the Agent Pipeline list creates a Pipeline, not a Loop', async () => {
+  const mounted = await mountWorkbench({ pipelines: [], loops: [] })
+  try {
+    const app = mounted.root.querySelector('.lm-app')
+    assert.ok(app.innerHTML.includes('新建 Pipeline'), 'the pipeline list button says 新建 Pipeline')
+    assert.ok(!app.innerHTML.includes('新建 Loop'), 'the pipeline list no longer says 新建 Loop')
+
+    // The modal it opens is the Pipeline editor too.
+    mounted.root.dispatch('click', { target: createClickTarget({ dataset: { action: 'create' } }, mounted.Element) })
+    const overlay = mounted.root.querySelector('.lm-overlay')
+    assert.ok(overlay.innerHTML.includes('<h2>新建 Pipeline</h2>'), 'the pipeline modal is titled 新建 Pipeline')
+
+    // The Loop page keeps its own 新建 Loop button.
+    mounted.root.dispatch('click', { target: createClickTarget({ dataset: { nav: 'loops' } }, mounted.Element) })
+    assert.ok(mounted.root.querySelector('.lm-app').innerHTML.includes('新建 Loop'), 'the Loop list keeps 新建 Loop')
+  } finally {
+    mounted.dispose()
+  }
 })

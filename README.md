@@ -8,7 +8,7 @@ Loop Manager 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 - 支持 Agent 指令节点和 Skill 节点，复用宿主提供的 Skill、MCP 等工具能力。
 - 支持为不同节点选择模型。
 - 实时查看执行状态、任务输出和运行记录，并可中途停止任务。
-- 支持本地保存工作流与运行结果，也可使用 PostgreSQL 持久化。
+- 支持本地保存 Agent Pipeline、Loop 与运行结果，也可使用 PostgreSQL 持久化（含收藏状态）。
 
 ## 开发与构建
 
